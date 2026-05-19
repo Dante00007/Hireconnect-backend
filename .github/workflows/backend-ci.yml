@@ -28,14 +28,30 @@ jobs:
 
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Backend Services
+      - name: Build Auth Service
 
-        run: docker compose build \
-          auth-service \
-          profile-service \
-          job-service \
-          application-service \
-          interview-service \
-          notification-service \
-          analytic-service \
-          gateway
+        run: docker compose build auth-service
+
+      - name: Build Profile Service
+
+        run: docker compose build profile-service
+
+      - name: Build Job Service
+
+        run: docker compose build job-service
+
+      - name: Build Application Service
+
+        run: docker compose build application-service
+
+      - name: Build Interview Service
+
+        run: docker compose build interview-service
+
+      - name: Build Notification Service
+
+        run: docker compose build notification-service
+
+      - name: Build Gateway
+
+        run: docker compose build gateway
