@@ -1,0 +1,497 @@
+services:
+
+  rabbitmq:
+
+    image: rabbitmq:3-management
+
+    container_name: rabbitmq
+
+    ports:
+
+      - "5672:5672"
+
+      - "15672:15672"
+
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+    networks:
+
+      - hireconnect-network
+  analytic-service:
+
+    restart: unless-stopped
+
+    build:
+
+      context: .
+
+      dockerfile: Hireconnect.Analytic/Dockerfile
+
+    container_name: analytic-service
+
+    ports:
+
+      - "5009:8080"
+
+    depends_on:
+
+      - application-service
+      - job-service
+      - interview-service
+
+    environment:
+
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+
+      ConnectionStrings__AnalyticConnection: ${ConnectionStrings__AnalyticConnection}
+
+      JwtSettings__Secret: ${JwtSettings__Secret}
+
+      JwtSettings__Issuer: ${JwtSettings__Issuer}
+
+      JwtSettings__Audience: ${JwtSettings__Audience}
+
+      JwtSettings__ExpiryInMinutes: ${JwtSettings__ExpiryInMinutes}
+
+      Services__ApplicationService: ${Services__ApplicationService}
+
+      Services__JobService: ${Services__JobService}
+
+      Services__InterviewService: ${Services__InterviewService}
+
+    healthcheck:
+
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/health || exit 1"]
+
+      interval: 30s
+
+      timeout: 10s
+
+      retries: 3
+
+      start_period: 20s
+    networks:
+
+      - hireconnect-network
+
+  auth-service:
+
+    restart: unless-stopped
+
+    build:
+
+      context: .
+
+      dockerfile: HireConnect.Auth/Dockerfile
+
+    container_name: auth-service
+
+    ports:
+
+      - "5002:8080"
+
+
+    environment:
+
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+
+      ConnectionStrings__AuthConnection: ${ConnectionStrings__AuthConnection}
+
+      JwtSettings__Secret: ${JwtSettings__Secret}
+
+      JwtSettings__Issuer: ${JwtSettings__Issuer}
+
+      JwtSettings__Audience: ${JwtSettings__Audience}
+
+      JwtSettings__ExpiryInMinutes: ${JwtSettings__ExpiryInMinutes}
+    
+    healthcheck:
+
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/health || exit 1"]
+
+      interval: 30s
+
+      timeout: 10s
+
+      retries: 3
+
+      start_period: 20s
+
+    networks:
+
+      - hireconnect-network
+
+  application-service:
+
+    restart: unless-stopped
+
+    build:
+
+      context: .
+
+      dockerfile: HireConnect.Application/Dockerfile
+
+    container_name: application-service
+
+    ports:
+
+      - "5005:8080"
+
+    depends_on:
+      - job-service
+
+      - profile-service
+
+      - rabbitmq
+    healthcheck:
+
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/health || exit 1"]
+
+      interval: 30s
+
+      timeout: 10s
+
+      retries: 3
+
+      start_period: 20s
+    environment:
+
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+
+      ConnectionStrings__ApplicationConnection: ${ConnectionStrings__ApplicationConnection}
+
+      JwtSettings__Secret: ${JwtSettings__Secret}
+
+      JwtSettings__Issuer: ${JwtSettings__Issuer}
+
+      JwtSettings__Audience: ${JwtSettings__Audience}
+
+      JwtSettings__ExpiryInMinutes: ${JwtSettings__ExpiryInMinutes}
+
+      RabbitMQ__Host: ${RabbitMQ__Host}
+
+      RabbitMQ__Username: ${RabbitMQ__Username}
+
+      RabbitMQ__Password: ${RabbitMQ__Password}
+
+      Services__JobService: ${Services__JobService}
+
+      Services__ProfileService: ${Services__ProfileService}
+
+    networks:
+
+      - hireconnect-network
+  gateway:
+
+    restart: unless-stopped
+
+    build:
+
+      context: .
+
+      dockerfile: HireConnect.Gateway/Dockerfile
+
+    container_name: gateway
+
+    ports:
+
+      - "5001:8080"
+
+    depends_on:
+
+      - auth-service
+
+      - analytic-service
+
+      - application-service
+
+      - interview-service
+
+      - job-service
+
+      - notification-service
+
+      - profile-service
+
+    environment:
+
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+    
+    healthcheck:
+
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/health || exit 1"]
+
+      interval: 30s
+
+      timeout: 10s
+
+      retries: 3
+
+      start_period: 20s
+
+    networks:
+
+      - hireconnect-network
+
+  interview-service:
+
+    restart: unless-stopped
+
+    build:
+
+      context: .
+
+      dockerfile: HireConnect.Interview/Dockerfile
+
+    container_name: interview-service
+
+    ports:
+
+      - "5006:8080"
+
+    depends_on:
+
+      - application-service
+
+      - rabbitmq
+    healthcheck:
+
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/health || exit 1"]
+
+      interval: 30s
+
+      timeout: 10s
+
+      retries: 3
+
+      start_period: 20s
+
+    environment:
+      
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+
+      ConnectionStrings__InterviewConnection: ${ConnectionStrings__InterviewConnection}
+
+      JwtSettings__Secret: ${JwtSettings__Secret}
+
+      JwtSettings__Issuer: ${JwtSettings__Issuer}
+
+      JwtSettings__Audience: ${JwtSettings__Audience}
+
+      JwtSettings__ExpiryInMinutes: ${JwtSettings__ExpiryInMinutes}
+
+      RabbitMQ__Host: ${RabbitMQ__Host}
+
+      RabbitMQ__Username: ${RabbitMQ__Username}
+
+      RabbitMQ__Password: ${RabbitMQ__Password}
+
+      Services__ApplicationService: ${Services__ApplicationService}
+
+    networks:
+
+      - hireconnect-network
+
+  job-service:
+
+    restart: unless-stopped
+
+    build:
+
+      context: .
+
+      dockerfile: HireConnect.Job/Dockerfile
+
+    container_name: job-service
+
+    ports:
+
+      - "5004:8080"
+
+    depends_on:
+
+      - profile-service
+    healthcheck:
+
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/health || exit 1"]
+
+      interval: 30s
+
+      timeout: 10s
+
+      retries: 3
+
+      start_period: 20s
+
+    environment:
+
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+
+      ConnectionStrings__JobConnection: ${ConnectionStrings__JobConnection}
+
+      JwtSettings__Secret: ${JwtSettings__Secret}
+
+      JwtSettings__Issuer: ${JwtSettings__Issuer}
+
+      JwtSettings__Audience: ${JwtSettings__Audience}
+
+      JwtSettings__ExpiryInMinutes: ${JwtSettings__ExpiryInMinutes}
+
+      Services__ProfileService: ${Services__ProfileService}
+
+    networks:
+
+      - hireconnect-network
+
+  notification-service:
+
+    restart: unless-stopped
+
+    build:
+
+      context: .
+
+      dockerfile: HireConnect.Notification/Dockerfile
+
+    container_name: notification-service
+
+    ports:
+
+      - "5007:8080"
+
+    depends_on:
+
+      - rabbitmq
+
+    healthcheck:
+
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/health || exit 1"]
+
+      interval: 30s
+
+      timeout: 10s
+
+      retries: 3
+
+      start_period: 20s
+
+    environment:
+
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+
+      ConnectionStrings__NotificationConnection: ${ConnectionStrings__NotificationConnection}
+
+      JwtSettings__Secret: ${JwtSettings__Secret}
+
+      JwtSettings__Issuer: ${JwtSettings__Issuer}
+
+      JwtSettings__Audience: ${JwtSettings__Audience}
+
+      JwtSettings__ExpiryInMinutes: ${JwtSettings__ExpiryInMinutes}
+
+      RabbitMQ__Host: ${RabbitMQ__Host}
+
+      RabbitMQ__Username: ${RabbitMQ__Username}
+
+      RabbitMQ__Password: ${RabbitMQ__Password}
+
+
+    networks:
+
+      - hireconnect-network
+
+  profile-service:
+
+    restart: unless-stopped
+
+    build:
+
+      context: .
+
+      dockerfile: HireConnect.Profile/Dockerfile
+
+    container_name: profile-service
+
+    ports:
+
+      - "5003:8080"
+
+    healthcheck:
+
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/health || exit 1"]
+
+      interval: 30s
+
+      timeout: 10s
+
+      retries: 3
+
+      start_period: 20s
+
+    environment:
+
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+
+      ConnectionStrings__ProfileConnection: ${ConnectionStrings__ProfileConnection}
+
+      JwtSettings__Secret: ${JwtSettings__Secret}
+
+      JwtSettings__Issuer: ${JwtSettings__Issuer}
+
+      JwtSettings__Audience: ${JwtSettings__Audience}
+
+      JwtSettings__ExpiryInMinutes: ${JwtSettings__ExpiryInMinutes}
+
+      Cloudinary__CloudName: ${Cloudinary__CloudName}
+
+      Cloudinary__ApiKey: ${Cloudinary__ApiKey}
+
+      Cloudinary__ApiSecret: ${Cloudinary__ApiSecret}
+
+    networks:
+
+      - hireconnect-network
+
+  frontend:
+
+    restart: unless-stopped
+
+    build:
+
+      context: ../frontend/Hireconnect-Frontend
+
+      dockerfile: Dockerfile
+
+    container_name: frontend
+
+    ports:
+
+      - "4200:80"
+
+    depends_on:
+
+      - gateway
+    healthcheck:
+
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/health || exit 1"]
+
+      interval: 30s
+
+      timeout: 10s
+
+      retries: 3
+
+      start_period: 20s
+
+    networks:
+
+      - hireconnect-network
+
+volumes:
+  rabbitmq-data:
+
+networks:
+
+  hireconnect-network:
+

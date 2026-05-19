@@ -1,0 +1,6 @@
+@HireConnect.Auth_HostAddress = http://localhost:5174
+
+GET {{HireConnect.Auth_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
