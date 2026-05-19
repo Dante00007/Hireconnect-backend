@@ -110,20 +110,30 @@ builder.Services.AddMassTransit(x =>
     >();
     x.UsingRabbitMq((context, cfg) =>
     {
-        cfg.Host(
-            rabbitMqSettings["Host"],
-            "/",
-            h =>
-            {
-                h.Username(
-                    rabbitMqSettings["Username"]!
-                );
+        var rabbitMqUri =
+    rabbitMqSettings["Uri"];
 
-                h.Password(
-                    rabbitMqSettings["Password"]!
-                );
-            }
-        );
+        if (!string.IsNullOrEmpty(rabbitMqUri))
+        {
+            cfg.Host(new Uri(rabbitMqUri));
+        }
+        else
+        {
+            cfg.Host(
+                rabbitMqSettings["Host"],
+                "/",
+                h =>
+                {
+                    h.Username(
+                        rabbitMqSettings["Username"]!
+                    );
+
+                    h.Password(
+                        rabbitMqSettings["Password"]!
+                    );
+                }
+            );
+        }
         cfg.ConfigureEndpoints(context);
     });
 });
