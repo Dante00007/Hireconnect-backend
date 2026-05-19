@@ -30,4 +30,12 @@ jobs:
 
       - name: Build Backend Services
 
-        run: docker compose build
+        run: docker compose build \
+          auth-service \
+          profile-service \
+          job-service \
+          application-service \
+          interview-service \
+          notification-service \
+          analytic-service \
+          gateway
