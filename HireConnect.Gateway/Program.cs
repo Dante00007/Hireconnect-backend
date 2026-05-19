@@ -11,7 +11,7 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
             "http://localhost:4200",
-             "https://hireconnect-frontend.onrender.com"
+             "https://hireconnect-frontend-mlwg.onrender.com"
             ) 
               .AllowAnyMethod()
               .AllowAnyHeader()
