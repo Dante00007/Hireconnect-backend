@@ -82,5 +82,6 @@ var app = builder.Build();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+app.UseHealthChecks("/health");
 
 app.Run();
